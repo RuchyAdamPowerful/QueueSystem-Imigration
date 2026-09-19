@@ -1,0 +1,15 @@
+{
+  "name": "qms-imigrasi",
+  "version": "1.0.0",
+  "description": "Queue Management System lokal untuk Kantor Imigrasi (ambil nomor via scan QR, jaringan WiFi lokal)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.8.3"
+  }
+}

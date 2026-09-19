@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Loket Petugas — QMS Kantor Imigrasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tailwind-config.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/shared.js"></script>
+</head>
+<body class="bg-slate-50">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const { CATEGORIES, LOKET_COUNT, loketLabel, spellNumber, speak, warmUpVoices } = window.QMS;
+
+function Crest() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="15" cy="15" r="13.5" stroke="#d4b877" strokeWidth="1.4" />
+      <path d="M15 6 L21 10 V17 C21 21 18.3 23.6 15 25 C11.7 23.6 9 21 9 17 V10 Z" stroke="#d4b877" strokeWidth="1.3" fill="none" />
+      <path d="M12 15.5 L14.2 17.7 L18.3 12.8" stroke="#d4b877" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TopNav({ active }) {
+  const items = [
+    { href: '/', label: 'Beranda', key: 'home' },
+    { href: '/kiosk', label: 'Kiosk', key: 'kiosk' },
+    { href: '/loket', label: 'Loket Petugas', key: 'loket' },
+    { href: '/display', label: 'Layar Publik', key: 'display' }
+  ];
+  return (
+    <div className="bg-passport-950 text-white">
+      <div className="max-w-6xl mx-auto px-6 flex items-center gap-1">
+        <div className="flex items-center gap-2 pr-6 py-3">
+          <Crest />
+          <span className="font-serif font-semibold text-[15px] tracking-wide">Imigrasi · QMS</span>
+        </div>
+        {items.map(it => (
+          <a key={it.key} href={it.href}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              active === it.key ? 'border-brass-400 text-white' : 'border-transparent text-passport-300 hover:text-white'
+            }`}>
+            {it.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LoketPage() {
+  const socketRef = useRef(null);
+  const [state, setState] = useState({ tickets: [], loketStatus: {} });
+  const [activeLoket, setActiveLoket] = useState(1);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    warmUpVoices();
+    const socket = window.QMS.connectSocket();
+    socketRef.current = socket;
+    socket.on('state', setState);
+    return () => socket.disconnect();
+  }, []);
+
+  function pulse() { setFlash(true); setTimeout(() => setFlash(false), 900); }
+
+  function handleNext() {
+    socketRef.current.emit('loket:next', activeLoket, (res) => {
+      if (res && res.ok) {
+        speak(`Nomor antrean ${spellNumber(res.ticket.number)}, silakan menuju ${loketLabel(activeLoket)}`);
+        pulse();
+      } else {
+        alert('Tidak ada antrean menunggu.');
+      }
+    });
+  }
+  function handleRecall() {
+    socketRef.current.emit('loket:recall', activeLoket, (res) => {
+      if (res && res.ok) speak(`Sekali lagi, nomor antrean ${spellNumber(res.ticket.number)}, silakan menuju ${loketLabel(activeLoket)}`);
+    });
+  }
+  function handleFinish() {
+    socketRef.current.emit('loket:finish', activeLoket);
+  }
+  function handleReset() {
+    if (confirm('Hapus seluruh data antrean hari ini? Tindakan ini tidak dapat dibatalkan.')) {
+      socketRef.current.emit('admin:reset');
+    }
+  }
+
+  const tickets = state.tickets || [];
+  const loketStatus = state.loketStatus || {};
+  const waiting = tickets.filter(t => t.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
+  const currentId = loketStatus[activeLoket] && loketStatus[activeLoket].currentTicketId;
+  const current = currentId ? tickets.find(t => t.id === currentId) : null;
+  const history = tickets.filter(t => t.status === 'done').sort((a, b) => b.doneAt - a.doneAt).slice(0, 8);
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <TopNav active="loket" />
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="font-serif text-2xl text-passport-950">Dashboard petugas loket</h2>
+            <p className="text-slate-400 text-sm mt-1">Pilih loket, lalu kelola pemanggilan antrean.</p>
+          </div>
+          <button onClick={handleReset} className="text-xs text-slate-400 hover:text-red-500 transition-colors">
+            Reset data hari ini
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          {Array.from({ length: LOKET_COUNT }, (_, i) => i + 1).map(n => {
+            const busy = loketStatus[n] && loketStatus[n].status === 'serving';
+            return (
+              <button key={n} onClick={() => setActiveLoket(n)}
+                className={`px-5 py-2 rounded-lg font-semibold text-sm border transition-colors flex items-center gap-2 ${
+                  activeLoket === n ? 'bg-passport-900 text-white border-passport-900' : 'bg-white text-passport-800 border-slate-200 hover:border-passport-300'
+                }`}>
+                {loketLabel(n)}
+                <span className={`w-1.5 h-1.5 rounded-full ${busy ? 'bg-brass-500' : 'bg-slate-300'}`}></span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          <div className={`md:col-span-2 bg-white rounded-2xl border p-8 transition-colors ${flash ? 'border-brass-400' : 'border-slate-200'}`}>
+            <p className="text-slate-400 text-sm mb-3">Sedang dilayani — {loketLabel(activeLoket)}</p>
+            {current ? (
+              <div>
+                <p className="font-serif text-5xl font-semibold text-passport-950">{current.number}</p>
+                <p className="text-slate-500 mt-2">{CATEGORIES[current.category].name}</p>
+              </div>
+            ) : (
+              <p className="text-slate-300 font-serif text-3xl py-5">Tidak ada panggilan aktif</p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 mt-7">
+              <button onClick={handleNext}
+                className="flex-1 bg-passport-800 hover:bg-passport-900 text-white font-semibold py-3 rounded-xl transition-colors">
+                Panggil nomor selanjutnya
+              </button>
+              <button onClick={handleRecall} disabled={!current}
+                className="flex-1 bg-brass-500 hover:bg-brass-600 disabled:opacity-35 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors">
+                Panggil ulang
+              </button>
+              <button onClick={handleFinish} disabled={!current}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-35 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors">
+                Selesai
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <p className="text-slate-400 text-sm mb-3">Menunggu ({waiting.length})</p>
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {waiting.length === 0 && <p className="text-slate-300 text-sm py-2">Tidak ada antrean menunggu.</p>}
+              {waiting.map(t => (
+                <div key={t.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                  <span className="font-serif font-semibold text-passport-900">{t.number}</span>
+                  <span className="text-xs text-slate-400">{CATEGORIES[t.category].name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
+          <p className="text-slate-400 text-sm mb-3">Riwayat dilayani</p>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-400 border-b border-slate-100">
+                <th className="py-2 font-medium">Nomor</th>
+                <th className="font-medium">Loket</th>
+                <th className="font-medium">Selesai pukul</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map(t => (
+                <tr key={t.id} className="border-b border-slate-50 last:border-0">
+                  <td className="py-2.5 font-serif font-semibold text-passport-900">{t.number}</td>
+                  <td className="text-slate-500">{loketLabel(t.loket)}</td>
+                  <td className="text-slate-500">{new Date(t.doneAt).toLocaleTimeString('id-ID')}</td>
+                </tr>
+              ))}
+              {history.length === 0 && (
+                <tr><td colSpan="3" className="py-6 text-slate-300 text-center">Belum ada riwayat hari ini.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<LoketPage />);
+</script>
+</body>
+</html>

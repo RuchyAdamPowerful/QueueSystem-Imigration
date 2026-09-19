@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kiosk — QMS Kantor Imigrasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tailwind-config.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/shared.js"></script>
+</head>
+<body class="bg-passport-950">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const { CATEGORIES } = window.QMS;
+
+function Crest() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="15" cy="15" r="13.5" stroke="#d4b877" strokeWidth="1.4" />
+      <path d="M15 6 L21 10 V17 C21 21 18.3 23.6 15 25 C11.7 23.6 9 21 9 17 V10 Z" stroke="#d4b877" strokeWidth="1.3" fill="none" />
+      <path d="M12 15.5 L14.2 17.7 L18.3 12.8" stroke="#d4b877" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function KioskPage() {
+  const [state, setState] = useState({ tickets: [] });
+  const [ambilUrl, setAmbilUrl] = useState('');
+  const [justAdded, setJustAdded] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/ambil-url').then(r => r.json()).then(d => setAmbilUrl(d.url)).catch(() => {});
+    const socket = window.QMS.connectSocket();
+    let lastCount = null;
+    socket.on('state', (s) => {
+      setState(s);
+      const waitingCount = s.tickets.filter(t => t.status === 'waiting').length;
+      if (lastCount !== null && waitingCount > lastCount) {
+        const newest = [...s.tickets].filter(t => t.status === 'waiting').sort((a, b) => b.createdAt - a.createdAt)[0];
+        if (newest) {
+          setJustAdded(newest);
+          setTimeout(() => setJustAdded(null), 4000);
+        }
+      }
+      lastCount = waitingCount;
+    });
+    return () => socket.disconnect();
+  }, []);
+
+  const waiting = (state.tickets || []).filter(t => t.status === 'waiting');
+  const counts = { A: 0, B: 0, C: 0 };
+  waiting.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
+
+  return (
+    <div className="min-h-screen security-lines flex flex-col items-center justify-center text-white px-6 py-12">
+      <div className="flex items-center gap-3 mb-8">
+        <Crest />
+        <div>
+          <p className="font-serif text-xl tracking-wide">Kantor Imigrasi</p>
+          <p className="text-passport-300 text-sm">Ambil nomor antrean lewat HP Anda</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl shadow-2xl p-8 flex flex-col items-center max-w-sm w-full">
+        <p className="text-passport-900 font-semibold text-center mb-1">Pindai kode ini dengan kamera HP</p>
+        <p className="text-slate-400 text-sm text-center mb-5">untuk memilih layanan &amp; mengambil nomor antrean</p>
+        <img src="/api/qr.png" alt="Kode QR ambil nomor antrean" className="w-64 h-64 rounded-xl border border-slate-100" />
+        {ambilUrl && (
+          <p className="text-slate-400 text-xs mt-4 text-center break-all">Atau buka: {ambilUrl}</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mt-10 w-full max-w-xl">
+        {Object.values(CATEGORIES).map(cat => (
+          <div key={cat.code} className="bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-center">
+            <p className="text-brass-400 font-serif text-2xl font-semibold">{cat.code}</p>
+            <p className="text-passport-300 text-xs mt-1 leading-snug">{cat.name}</p>
+            <p className="font-serif text-3xl font-semibold mt-2">{counts[cat.code]}</p>
+            <p className="text-passport-400 text-[11px]">menunggu</p>
+          </div>
+        ))}
+      </div>
+
+      {justAdded && (
+        <div className="fixed bottom-8 bg-brass-500 text-passport-950 px-6 py-3 rounded-xl shadow-xl font-semibold">
+          Tiket {justAdded.number} berhasil diambil
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<KioskPage />);
+</script>
+</body>
+</html>

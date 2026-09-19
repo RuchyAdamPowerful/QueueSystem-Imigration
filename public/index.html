@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QMS — Kantor Imigrasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tailwind-config.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-100">
+<div id="root"></div>
+<script type="text/babel">
+function Crest() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="15" cy="15" r="13.5" stroke="#d4b877" strokeWidth="1.4" />
+      <path d="M15 6 L21 10 V17 C21 21 18.3 23.6 15 25 C11.7 23.6 9 21 9 17 V10 Z" stroke="#d4b877" strokeWidth="1.3" fill="none" />
+      <path d="M12 15.5 L14.2 17.7 L18.3 12.8" stroke="#d4b877" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TopNav({ active }) {
+  const items = [
+    { href: '/', label: 'Beranda', key: 'home' },
+    { href: '/kiosk', label: 'Kiosk', key: 'kiosk' },
+    { href: '/loket', label: 'Loket Petugas', key: 'loket' },
+    { href: '/display', label: 'Layar Publik', key: 'display' }
+  ];
+  return (
+    <div className="bg-passport-950 text-white">
+      <div className="max-w-6xl mx-auto px-6 flex items-center gap-1">
+        <div className="flex items-center gap-2 pr-6 py-3">
+          <Crest />
+          <span className="font-serif font-semibold text-[15px] tracking-wide">Imigrasi · QMS</span>
+        </div>
+        {items.map(it => (
+          <a key={it.key} href={it.href}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              active === it.key ? 'border-brass-400 text-white' : 'border-transparent text-passport-300 hover:text-white'
+            }`}>
+            {it.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HomePage() {
+  const pages = [
+    { href: '/kiosk',   title: 'Kiosk — layar kode QR', desc: 'Dipasang di ruang tunggu. Menampilkan kode QR untuk dipindai pemohon.' },
+    { href: '/ambil',   title: 'Ambil nomor (di HP pemohon)', desc: 'Terbuka otomatis begitu pemohon memindai QR di layar Kiosk.' },
+    { href: '/loket',   title: 'Dashboard loket petugas', desc: 'Panggil nomor berikutnya, panggil ulang, atau selesaikan.' },
+    { href: '/display', title: 'Layar publik (TV)', desc: 'Nomor yang sedang dipanggil, untuk ruang tunggu.' }
+  ];
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <TopNav active="home" />
+      <div className="max-w-5xl mx-auto px-6 py-16">
+        <div className="max-w-xl mb-14">
+          <p className="text-brass-600 text-sm font-semibold mb-3">Queue Management System — jaringan WiFi lokal</p>
+          <h1 className="font-serif text-4xl text-passport-950 leading-tight">Ambil nomor dari HP, tanpa antre pegang layar kiosk.</h1>
+          <p className="text-slate-500 mt-4 leading-relaxed">
+            Pemohon memindai kode QR di layar Kiosk dengan kamera HP masing-masing, memilih layanan,
+            lalu tiketnya langsung tersinkron ke Loket Petugas dan Layar Publik — semua lewat satu server
+            yang berjalan di WiFi kantor.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-5">
+          {pages.map(p => (
+            <a key={p.href} href={p.href} className="bg-white rounded-xl border border-slate-200 p-6 hover:border-passport-300 transition-colors block">
+              <h3 className="font-serif text-lg text-passport-950 mb-2">{p.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{p.desc}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<HomePage />);
+</script>
+</body>
+</html>
