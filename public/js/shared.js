@@ -4,13 +4,11 @@ window.QMS = (function () {
     B: { code: 'B', name: 'Penggantian Paspor' },
     C: { code: 'C', name: 'Pengambilan Paspor' }
   };
-  const LOKET_COUNT = 4;
+  const LOKET_COUNT = 2;
 
   // Nama tampilan untuk tiap nomor loket. Loket yang tidak didaftarkan di
   // sini akan otomatis memakai label default "Loket <nomor>".
-  const LOKET_NAMES = {
-    4: 'INTELDAKIM'
-  };
+  const LOKET_NAMES = {};
 
   function loketLabel(loketNum) {
     return LOKET_NAMES[loketNum] || `Loket ${loketNum}`;
@@ -21,8 +19,25 @@ window.QMS = (function () {
     return digits ? `${letter}, ${digits.split('').join(' ')}` : letter;
   }
 
+  function findIndonesianVoice() {
+    if (!('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    const indonesianVoices = voices.filter(voice =>
+      voice.lang && voice.lang.toLowerCase().startsWith('id')
+    );
+    return indonesianVoices.sort((first, second) => {
+      const firstName = first.name.toLowerCase();
+      const secondName = second.name.toLowerCase();
+      const firstScore = (first.localService ? 2 : 0) + (/google|microsoft|natural/.test(firstName) ? 1 : 0);
+      const secondScore = (second.localService ? 2 : 0) + (/google|microsoft|natural/.test(secondName) ? 1 : 0);
+      return secondScore - firstScore;
+    })[0] || null;
+  }
+
   function warmUpVoices() {
-    if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', findIndonesianVoice, { once: true });
   }
 
   function speak(text) {
@@ -31,9 +46,10 @@ window.QMS = (function () {
       window.speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = 'id-ID';
-      utter.rate = 0.92;
-      const voices = window.speechSynthesis.getVoices();
-      const idVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('id'));
+      utter.rate = 0.88;
+      utter.pitch = 1.02;
+      utter.volume = 1;
+      const idVoice = findIndonesianVoice();
       if (idVoice) utter.voice = idVoice;
       window.speechSynthesis.speak(utter);
     } catch (e) { /* speech synthesis tidak tersedia di perangkat ini */ }

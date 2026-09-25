@@ -8,7 +8,7 @@ const CATEGORIES = {
   B: { code: 'B', name: 'Penggantian Paspor' },
   C: { code: 'C', name: 'Pengambilan Paspor' }
 };
-const LOKET_COUNT = 4;
+const LOKET_COUNT = 2;
 
 function createInitialState() {
   const loketStatus = {};

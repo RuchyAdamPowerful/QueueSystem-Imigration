@@ -26,13 +26,51 @@ function AmbilPage() {
   const [state, setState] = useState({ tickets: [] });
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(null);
+  const lastCallKeyRef = useRef(null);
 
   useEffect(() => {
+    window.QMS.warmUpVoices();
     const socket = window.QMS.connectSocket();
     socketRef.current = socket;
     socket.on('state', setState);
     return () => socket.disconnect();
   }, []);
+
+  function playCallAlert(currentCall) {
+    try {
+      const callText = `Nomor antrean ${window.QMS.spellNumber(currentCall.number)}, silakan menuju ${window.QMS.loketLabel(currentCall.loket)}`;
+      window.QMS.speak(callText);
+
+      const AudioCtor = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtor) {
+        const ctx = new AudioCtor();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.04;
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        setTimeout(() => {
+          oscillator.stop();
+          ctx.close();
+        }, 420);
+        if (ctx.state === 'suspended') ctx.resume();
+      }
+    } catch (e) {
+      // Browser pada ponsel mungkin membatasi suara bila belum ada interaksi pengguna.
+    }
+  }
+
+  useEffect(() => {
+    if (!ticket || !state.currentCall) return;
+    if (state.currentCall.ticketId !== ticket.id) return;
+    const callKey = `${state.currentCall.ticketId}-${state.currentCall.ts}`;
+    if (lastCallKeyRef.current === callKey) return;
+    lastCallKeyRef.current = callKey;
+    playCallAlert(state.currentCall);
+  }, [ticket, state.currentCall]);
 
   function ambil(category) {
     setLoading(category);
@@ -61,6 +99,11 @@ function AmbilPage() {
               <p className="text-slate-400 text-xs">Sisa antrean di depan Anda</p>
               <p className="text-3xl font-semibold text-passport-700 mt-1">{ahead}</p>
             </div>
+            {state.currentCall && state.currentCall.ticketId === ticket.id && (
+              <div className="mt-5 rounded-xl bg-emerald-100 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm font-semibold">
+                Nomor Anda sedang dipanggil.
+              </div>
+            )}
           </div>
           <div className="px-6 py-4 text-center text-xs text-slate-400">
             <p>{new Date(ticket.createdAt).toLocaleString('id-ID')}</p>
