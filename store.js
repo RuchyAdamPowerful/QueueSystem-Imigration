@@ -23,6 +23,7 @@ function createInitialState() {
 }
 
 let state = createInitialState();
+let deviceTickets = new Map();
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -32,8 +33,14 @@ function getWaitingTickets() {
   return state.tickets.filter(t => t.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
 }
 
-function addTicket(category) {
+function addTicket(category, deviceId) {
   if (!CATEGORIES[category]) throw new Error('Kategori tidak dikenal');
+  if (!deviceId || typeof deviceId !== 'string') throw new Error('Identitas perangkat tidak valid');
+  const existingTicketId = deviceTickets.get(deviceId);
+  if (existingTicketId) {
+    const existingTicket = state.tickets.find(ticket => ticket.id === existingTicketId);
+    if (existingTicket) return existingTicket;
+  }
   state.counters[category] = (state.counters[category] || 0) + 1;
   const number = `${category}-${String(state.counters[category]).padStart(2, '0')}`;
   const ticket = {
@@ -41,7 +48,13 @@ function addTicket(category) {
     loket: null, createdAt: Date.now(), calledAt: null, doneAt: null
   };
   state.tickets.push(ticket);
+  deviceTickets.set(deviceId, ticket.id);
   return ticket;
+}
+
+function getDeviceTicket(deviceId) {
+  const ticketId = deviceTickets.get(deviceId);
+  return state.tickets.find(ticket => ticket.id === ticketId) || null;
 }
 
 function callNext(loketNum) {
@@ -81,6 +94,7 @@ function finishCurrent(loketNum) {
 
 function resetAll() {
   state = createInitialState();
+  deviceTickets = new Map();
 }
 
 function getState() {
@@ -89,6 +103,6 @@ function getState() {
 
 module.exports = {
   CATEGORIES, LOKET_COUNT,
-  addTicket, callNext, recallCurrent, finishCurrent, resetAll,
+  addTicket, getDeviceTicket, callNext, recallCurrent, finishCurrent, resetAll,
   getState, getWaitingTickets
 };

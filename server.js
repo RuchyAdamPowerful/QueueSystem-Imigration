@@ -66,9 +66,13 @@ io.on('connection', (socket) => {
   // Kirim state terkini begitu ada perangkat baru terhubung
   socket.emit('state', store.getState());
 
-  socket.on('ticket:add', (category, cb) => {
+  socket.on('ticket:current', (deviceId, cb) => {
+    if (typeof cb === 'function') cb(store.getDeviceTicket(deviceId));
+  });
+
+  socket.on('ticket:add', (category, deviceId, cb) => {
     try {
-      const ticket = store.addTicket(category);
+      const ticket = store.addTicket(category, deviceId);
       broadcastState();
       if (typeof cb === 'function') cb({ ok: true, ticket });
     } catch (e) {

@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^node --check server\\.js; node --check store\\.js; node -e \"const assert = require\\('node:assert/strict'\\); const store = require\\('\\./store'\\); const first = store\\.addTicket\\('A', 'phone-1'\\); const repeated = store\\.addTicket\\('B', 'phone-1'\\); const other = store\\.addTicket\\('A', 'phone-2'\\); assert\\.equal\\(repeated\\.id, first\\.id\\); assert\\.equal\\(store\\.getState\\(\\)\\.tickets\\.length, 2\\); assert\\.equal\\(store\\.getDeviceTicket\\('phone-1'\\)\\.id, first\\.id\\); assert\\.notEqual\\(other\\.id, first\\.id\\); store\\.resetAll\\(\\); assert\\.equal\\(store\\.getDeviceTicket\\('phone-1'\\), null\\); assert\\.equal\\(store\\.addTicket\\('A', 'phone-1'\\)\\.number, 'A-01'\\); console\\.log\\('device ticket checks passed'\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
