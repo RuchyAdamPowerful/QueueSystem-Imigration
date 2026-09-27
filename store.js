@@ -1,5 +1,4 @@
-/* Sumber kebenaran tunggal untuk seluruh antrean, disimpan di memori server.
-   Semua perangkat (Kiosk, Ambil-Nomor di HP, Loket, Display) membaca &
+/* Semua perangkat (Kiosk, Ambil-Nomor di HP, Loket, Display) membaca &
    mengubah state yang sama ini lewat Socket.io — bukan localStorage lagi,
    karena sekarang perangkatnya berbeda-beda, bukan sekadar tab berbeda. */
 
