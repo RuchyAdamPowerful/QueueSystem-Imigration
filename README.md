@@ -1,3 +1,5 @@
+THIS PROJECT 100% GENERATE BY CLAUDE AND GITHUB COPILOT
+
 # QMS Lokal — Kantor Imigrasi
 
 Queue Management System yang berjalan di satu komputer/mini-PC di jaringan WiFi
