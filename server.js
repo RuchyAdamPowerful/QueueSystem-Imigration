@@ -105,10 +105,15 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('== QMS Kantor Imigrasi berjalan ==');
-  console.log(`  Di komputer ini : http://localhost:${PORT}`);
-  console.log(`  Di jaringan WiFi: http://${getLanIp()}:${PORT}`);
-  console.log(`  Link ambil nomor: ${getAmbilUrl()}`);
-  console.log('  (Pastikan semua perangkat terhubung ke WiFi yang sama)');
+store.ready.then(() => {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log('== QMS Kantor Imigrasi berjalan ==');
+    console.log(`  Di komputer ini : http://localhost:${PORT}`);
+    console.log(`  Di jaringan WiFi: http://${getLanIp()}:${PORT}`);
+    console.log(`  Link ambil nomor: ${getAmbilUrl()}`);
+    console.log('  (Pastikan semua perangkat terhubung ke WiFi yang sama)');
+  });
+}).catch(error => {
+  console.error('Gagal membuka database SQLite:', error);
+  process.exitCode = 1;
 });

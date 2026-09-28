@@ -51,11 +51,18 @@ Default port `3000`. Untuk mengganti:
 PORT=8080 npm start
 ```
 
+## Penyimpanan data
+
+Riwayat tiket, status pelayanan, penghitung nomor, dan panggilan terakhir
+disimpan permanen di SQLite pada `data/queue.sqlite`. Data tetap tersedia
+setelah server dimatikan atau dijalankan ulang. Folder `data/` dibuat otomatis
+dan tidak dimasukkan ke Git.
+
+Lokasi database dapat diganti dengan variabel lingkungan `DATABASE_PATH` jika
+ingin menyimpan data di lokasi lain.
+
 ## Catatan
 
-- Data antrean disimpan di memori server (bukan database) — jika server
-  dimatikan/di-restart, data akan kembali kosong. Untuk kebutuhan produksi
-  jangka panjang, tambahkan penyimpanan seperti SQLite/lowdb.
 - Suara panggilan memakai Web Speech API bawaan browser (Bahasa Indonesia).
   Kualitas suara tergantung browser & sistem operasi yang dipakai untuk
   membuka halaman Loket dan Layar Publik.
